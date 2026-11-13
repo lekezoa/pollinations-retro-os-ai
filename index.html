@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RetroOS AI - The LLM-Simulated Virtual Machine</title>
+  <style>
+    :root {
+      --crt-bg: #0d1117;
+      --term-green: #39ff14;
+      --term-dim: #228b22;
+      --border: #30363d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Courier New", Courier, monospace; }
+    body { background: #06090e; color: var(--term-green); min-height: 100vh; display: flex; flex-direction: column; }
+    header { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(13, 17, 23, 0.9); }
+    .brand { font-size: 1.25rem; font-weight: bold; letter-spacing: 1px; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 1.5rem; width: 100%; flex: 1; display: flex; flex-direction: column; }
+    
+    .byop-banner { display: flex; justify-content: space-between; align-items: center; background: rgba(57, 255, 20, 0.05); border: 1px dashed var(--term-dim); border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 1rem; font-size: 0.85rem; }
+    .byop-banner input { background: #000; border: 1px solid var(--term-dim); color: var(--term-green); padding: 0.35rem 0.6rem; border-radius: 4px; font-size: 0.85rem; width: 250px; }
+
+    .terminal-window { flex: 1; min-height: 480px; max-height: 600px; background: #000; border: 2px solid var(--term-dim); border-radius: 8px; padding: 1.25rem; display: flex; flex-direction: column; box-shadow: 0 0 25px rgba(57, 255, 20, 0.15); overflow-y: auto; text-shadow: 0 0 4px rgba(57, 255, 20, 0.4); }
+    .term-output { flex: 1; white-space: pre-wrap; line-height: 1.5; font-size: 0.95rem; overflow-y: auto; }
+    .term-input-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; border-top: 1px solid rgba(57, 255, 20, 0.2); padding-top: 0.75rem; }
+    .prompt { font-weight: bold; }
+    input[type="text"] { flex: 1; background: transparent; border: none; color: #fff; font-size: 1rem; outline: none; caret-color: var(--term-green); }
+
+    .quick-cmds { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .cmd-btn { background: rgba(57, 255, 20, 0.1); border: 1px solid var(--term-dim); color: var(--term-green); padding: 0.35rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
+    .cmd-btn:hover { background: var(--term-green); color: #000; }
+
+    footer { border-top: 1px solid var(--border); padding: 1.25rem; text-align: center; color: #8b949e; font-size: 0.85rem; margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">📟 RetroOS AI (v1.984)</div>
+    <a href="https://pollinations.ai/?ref=badge" target="_blank">
+      <img src="https://raw.githubusercontent.com/pollinations/pollinations/main/packages/ui/src/brand/badge-made-with.svg" alt="Made with pollinations.ai" style="height: 30px;">
+    </a>
+  </header>
+
+  <div class="container">
+    <div class="byop-banner">
+      <div><strong>🔑 BYOP Key:</strong> Enter your Pollinations API key to power the hallucinated VM.</div>
+      <input type="password" id="apiKeyInput" placeholder="Enter key (or leave empty for free tier)" onchange="saveKey(this.value)">
+    </div>
+
+    <div class="terminal-window" onclick="document.getElementById('cliInput').focus()">
+      <div class="term-output" id="termOutput">RetroOS Kernel v4.19 (x86_64-simulated)
+Copyright (C) 1984-2026 Retro Systems Corp.
+Model: Pollinations LLM Virtual Hardware Engine
+
+Type 'help' for available commands, or try 'ls', 'cat secret.txt', 'neofetch', 'adventure'.
+root@retro-os:~# </div>
+      <div class="term-input-row">
+        <span class="prompt">root@retro-os:~#</span>
+        <input type="text" id="cliInput" autofocus onkeydown="handleKey(event)">
+      </div>
+    </div>
+
+    <div class="quick-cmds">
+      <button class="cmd-btn" onclick="execCmd('ls -la')">ls -la</button>
+      <button class="cmd-btn" onclick="execCmd('cat secret.txt')">cat secret.txt</button>
+      <button class="cmd-btn" onclick="execCmd('uname -a')">uname -a</button>
+      <button class="cmd-btn" onclick="execCmd('adventure')">adventure</button>
+      <button class="cmd-btn" onclick="execCmd('ps aux')">ps aux</button>
+      <button class="cmd-btn" onclick="execCmd('clear')">clear</button>
+    </div>
+  </div>
+
+  <footer>
+    <a href="https://pollinations.ai/?ref=badge" target="_blank">
+      <img src="https://raw.githubusercontent.com/pollinations/pollinations/main/packages/ui/src/brand/badge-made-with.svg" alt="Made with pollinations.ai" style="height: 30px;">
+    </a>
+    <p>Built with Pollinations.ai API for POLLEN-QUEST #19179 • An AI model playing a retro computer</p>
+  </footer>
+
+  <script>
+    let sessionHistory = [];
+
+    function saveKey(val) {
+      if (val) localStorage.setItem('pollinations_key', val.trim());
+      else localStorage.removeItem('pollinations_key');
+    }
+
+    function appendOutput(text) {
+      const el = document.getElementById('termOutput');
+      el.textContent += text;
+      el.parentElement.scrollTop = el.parentElement.scrollHeight;
+    }
+
+    function execCmd(cmd) {
+      document.getElementById('cliInput').value = cmd;
+      runCommand(cmd);
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter') {
+        const cmd = e.target.value.trim();
+        e.target.value = '';
+        if (cmd) runCommand(cmd);
+      }
+    }
+
+    async function runCommand(cmd) {
+      if (cmd === 'clear') {
+        document.getElementById('termOutput').textContent = "root@retro-os:~# ";
+        return;
+      }
+
+      appendOutput(`${cmd}\n`);
+      const apiKey = localStorage.getItem('pollinations_key') || "";
+
+      sessionHistory.push({ role: "user", content: cmd });
+
+      const systemPrompt = `You are playing the role of a retro 1980s Unix/DOS computer terminal called RetroOS. The user runs shell commands, text games, or queries. Respond EXACTLY as a retro terminal CLI outputting ASCII text, directory listings, or game responses. Do NOT include any markdown code blocks, conversational pleasantries, or explanations. Only output the raw terminal output.`;
+
+      try {
+        const headers = { "Content-Type": "application/json" };
+        if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+
+        const res = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({
+            model: "openai",
+            messages: [
+              { role: "system", content: systemPrompt },
+              ...sessionHistory.slice(-8)
+            ],
+            temperature: 0.6,
+            max_tokens: 350
+          })
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content || "";
+        sessionHistory.push({ role: "assistant", content: text });
+        appendOutput(text.trim() + "\n\nroot@retro-os:~# ");
+      } catch (err) {
+        appendOutput(`bash: ${cmd}: command hallucination failed (${err.message})\n\nroot@retro-os:~# `);
+      }
+    }
+
+    window.onload = () => {
+      const saved = localStorage.getItem('pollinations_key') || "";
+      if (saved) document.getElementById('apiKeyInput').value = saved;
+    };
+  </script>
+</body>
+</html>
